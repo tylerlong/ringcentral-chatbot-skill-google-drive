@@ -12,6 +12,14 @@ yarn add ringcentral-chatbot-skill-google-drive
 ```
 
 
+## Environment variables
+
+In order for this skill to work, you need to provide the following information as environment variables:
+
+- GOOGLE_API_CLIENT_ID
+- GOOGLE_API_CLIENT_SECRET
+
+
 ## Basic Sample
 
 ```js
