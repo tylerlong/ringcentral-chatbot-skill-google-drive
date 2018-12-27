@@ -28,9 +28,10 @@ const handleMessage4Bot = async event => {
     if (service) {
       const googleClient = createGoogleClient()
       googleClient.setCredentials(service.data.tokens)
-      const drive = google.drive({ version: 'v3', googleClient })
+      const drive = google.drive({ version: 'v3', auth: googleClient })
       const r = await drive.files.list()
-      console.log(r)
+      const text = r.data.files.map(file => file.name).slice(0, 6).join('\n')
+      await bot.sendMessage(group.id, { text })
     } else {
       const googleClient = createGoogleClient()
       const googleUrl = googleClient.generateAuthUrl({
@@ -61,7 +62,7 @@ app.get('/google/oauth', async (req, res) => {
   await bot.sendMessage(groupId, { text: 'I have been authorized to access your Google Drive' })
   // googleClient.setCredentials(tokens)
   // console.log(tokens)
-  // const drive = google.drive({ version: 'v3', googleClient })
+  // const drive = google.drive({ version: 'v3', auth: googleClient })
   // const notification = await drive.changes.watch({
   //   requestBody: {
   //     id: uuid(),
@@ -70,7 +71,7 @@ app.get('/google/oauth', async (req, res) => {
   //   }
   // })
   // console.log(notification)
-  res.send('')
+  res.send('<!doctype><html><body><script>close()</script></body></html>')
 })
 app.post('/google/webhook', async (req, res) => {
   res.send('')
