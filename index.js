@@ -1,5 +1,6 @@
 import express from 'express'
 import { google } from 'googleapis'
+import uuid from 'uuid/v1'
 
 const createGoogleClient = () => new google.auth.OAuth2(
   process.env.GOOGLE_API_CLIENT_ID,
@@ -20,7 +21,7 @@ skill.handle = async event => {
 }
 const handleMessage4Bot = async event => {
   const { text, group, bot } = event
-  if (text === 'google authorize') {
+  if (text === 'watch') {
     const googleClient = createGoogleClient()
     const googleUrl = googleClient.generateAuthUrl({
       access_type: 'offline',
@@ -37,6 +38,15 @@ app.get('/google/oauth', async (req, res) => {
   const { tokens } = await googleClient.getToken(code)
   googleClient.setCredentials(tokens)
   console.log(tokens)
+  const drive = google.drive({ version: 'v3', googleClient })
+  const notification = await drive.changes.watch({
+    id: uuid(),
+    type: 'web_hook',
+    address: process.env.RINGCENTRAL_CHATBOT_SERVER + '/google/webhook'
+  })
+  console.log(notification)
+})
+app.post('/google/webhook', async (req, res) => {
 })
 skill.app = app
 
