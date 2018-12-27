@@ -1,5 +1,6 @@
 import express from 'express'
 import { google } from 'googleapis'
+import { Service, Bot } from 'ringcentral-chatbot/dist/models'
 // import uuid from 'uuid/v1'
 
 const createGoogleClient = () => new google.auth.OAuth2(
@@ -21,25 +22,45 @@ skill.handle = async event => {
 }
 const handleMessage4Bot = async event => {
   const { text, group, bot } = event
-  if (text === 'watch') {
-    const googleClient = createGoogleClient()
-    const googleUrl = googleClient.generateAuthUrl({
-      access_type: 'offline',
-      scope: ['https://www.googleapis.com/auth/drive'],
-      state: group.id
-    })
-    await bot.sendMessage(group.id, { text: googleUrl })
+  if (text === 'list') {
+    const query = { name: 'GoogleDrive', groupId: group.id, botId: bot.id }
+    const service = await Service.findOne({ where: query })
+    if (service) {
+      const googleClient = createGoogleClient()
+      googleClient.setCredentials(service.data.tokens)
+      const drive = google.drive({ version: 'v3', googleClient })
+      const r = await drive.files.list()
+      console.log(r)
+    } else {
+      const googleClient = createGoogleClient()
+      const googleUrl = googleClient.generateAuthUrl({
+        access_type: 'offline',
+        scope: ['https://www.googleapis.com/auth/drive'],
+        state: `${group.id}:${bot.id}`
+      })
+      await bot.sendMessage(group.id, { text: `Please [authorize me](${googleUrl}) to access your Google Drive` })
+    }
   }
 }
 
 const app = express()
 app.get('/google/oauth', async (req, res) => {
   const { code, state } = req.query
-  console.log(state)
+  const [groupId, botId] = state.split(':')
   const googleClient = createGoogleClient()
   const { tokens } = await googleClient.getToken(code)
-  googleClient.setCredentials(tokens)
-  console.log(tokens)
+  const query = { name: 'GoogleDrive', groupId, botId }
+  const data = { tokens }
+  const service = await Service.findOne({ where: query })
+  if (service) {
+    await service.update({ data })
+  } else {
+    await Service.create({ ...query, data })
+  }
+  const bot = await Bot.findByPk(botId)
+  await bot.sendMessage(groupId, { text: 'I have been authorized to access your Google Drive' })
+  // googleClient.setCredentials(tokens)
+  // console.log(tokens)
   // const drive = google.drive({ version: 'v3', googleClient })
   // const notification = await drive.changes.watch({
   //   requestBody: {
