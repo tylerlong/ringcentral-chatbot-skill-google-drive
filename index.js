@@ -2,6 +2,7 @@ import express from 'express'
 import { google } from 'googleapis'
 import { Service, Bot } from 'ringcentral-chatbot/dist/models'
 import uuid from 'uuid/v1'
+import moment from 'moment'
 
 const createGoogleClient = () => new google.auth.OAuth2(
   process.env.GOOGLE_API_CLIENT_ID,
@@ -25,8 +26,7 @@ const sendAuthLink = async (group, bot) => {
   const googleUrl = googleClient.generateAuthUrl({
     access_type: 'offline',
     scope: [
-      'https://www.googleapis.com/auth/drive',
-      'https://www.googleapis.com/auth/drive.metadata'
+      'https://www.googleapis.com/auth/drive.readonly'
     ],
     state: `${group.id}:${bot.id}`,
     prompt: 'consent'
@@ -68,11 +68,11 @@ app.get('/google/oauth', async (req, res) => {
   const { tokens } = await googleClient.getToken(code)
   const query = { name: 'GoogleDrive', groupId, botId }
   const data = { tokens }
-  const service = await Service.findOne({ where: query })
+  let service = await Service.findOne({ where: query })
   if (service) {
-    await service.update({ data })
+    service = await service.update({ data })
   } else {
-    await Service.create({ ...query, data })
+    service = await Service.create({ ...query, data })
   }
   const bot = await Bot.findByPk(botId)
   await bot.sendMessage(groupId, { text: 'I have been authorized to access your Google Drive' })
@@ -94,12 +94,11 @@ app.get('/google/oauth', async (req, res) => {
   console.log(r.data)
   data.subscription = r.data
   data.pageToken = pageToken
-  await service.update({ data })
+  service = await service.update({ data })
 
   res.send('<!doctype><html><body><script>close()</script></body></html>')
 })
 app.post('/google/webhook', async (req, res) => {
-  console.log(req.headers)
   const resourceId = req.header('x-goog-resource-id')
   const service = await Service.findOne({ where: { data: { subscription: { resourceId } } } })
   const googleClient = createGoogleClient()
@@ -115,9 +114,21 @@ app.post('/google/webhook', async (req, res) => {
 
   for (const change of r.data.changes) {
     if (change.type === 'file') {
-      const r = await drive.files.get({ fileId: change.fileId })
+      const r = await drive.files.get({ fileId: change.fileId, fields: 'id,name,createdTime,modifiedTime,trashedTime,webViewLink,lastModifyingUser/emailAddress,lastModifyingUser/displayName,trashingUser/emailAddress' })
       console.log(r.data)
-      await bot.sendMessage(service.groupId, { text: `Some one changed file "[${r.data.name}](https://drive.google.com/file/d/${r.data.id}/view)"` })
+      if (!r.data.lastModifyingUser) {
+        continue
+      }
+      let action = 'changed'
+      if (r.data.createdTime === r.data.modifiedTime) {
+        if (moment() - moment(r.data.modifiedTime) < 60000) {
+          action = 'added'
+        } else {
+          action = 'removed'
+        }
+      }
+      const user = r.data.lastModifyingUser.displayName || r.data.lastModifyingUser.emailAddress
+      await bot.sendMessage(service.groupId, { text: `File "[${r.data.name}](https://drive.google.com/file/d/${r.data.id}/view)" ${action} by ${user}` })
     }
   }
   res.send('')
