@@ -1,7 +1,7 @@
 import express from 'express'
 import { google } from 'googleapis'
 import { Service, Bot } from 'ringcentral-chatbot/dist/models'
-// import uuid from 'uuid/v1'
+import uuid from 'uuid/v1'
 
 const createGoogleClient = () => new google.auth.OAuth2(
   process.env.GOOGLE_API_CLIENT_ID,
@@ -73,21 +73,28 @@ app.get('/google/oauth', async (req, res) => {
   }
   const bot = await Bot.findByPk(botId)
   await bot.sendMessage(groupId, { text: 'I have been authorized to access your Google Drive' })
-  // googleClient.setCredentials(tokens)
-  // console.log(tokens)
-  // const drive = google.drive({ version: 'v3', auth: googleClient })
-  // const notification = await drive.changes.watch({
-  //   requestBody: {
-  //     id: uuid(),
-  //     type: 'web_hook',
-  //     address: process.env.RINGCENTRAL_CHATBOT_SERVER + '/google/webhook'
-  //   }
-  // })
-  // console.log(notification)
+
+  googleClient.setCredentials(tokens)
+  const drive = google.drive({ version: 'v3', auth: googleClient })
+  let r = await drive.changes.getStartPageToken()
+  const pageToken = r.data.startPageToken
+  r = await drive.changes.watch({
+    pageToken,
+    requestBody: {
+      id: uuid(),
+      type: 'web_hook',
+      address: process.env.RINGCENTRAL_CHATBOT_SERVER + '/google/webhook'
+    }
+  })
+  console.log(r.data)
+
   res.send('<!doctype><html><body><script>close()</script></body></html>')
 })
 app.post('/google/webhook', async (req, res) => {
   res.send('')
+})
+app.get('/', async (req, res) => {
+  res.send('<!doctype><html><head><meta name="google-site-verification" content="ulGncwwPpE8ox4k34EOOUrQfKv5kJKIgXPNbiHuPyfw" /></head></html>')
 })
 skill.app = app
 
