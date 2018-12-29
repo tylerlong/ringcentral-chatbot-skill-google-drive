@@ -24,7 +24,10 @@ const sendAuthLink = async (group, bot) => {
   const googleClient = createGoogleClient()
   const googleUrl = googleClient.generateAuthUrl({
     access_type: 'offline',
-    scope: ['https://www.googleapis.com/auth/drive'],
+    scope: [
+      'https://www.googleapis.com/auth/drive',
+      'https://www.googleapis.com/auth/drive.metadata'
+    ],
     state: `${group.id}:${bot.id}`,
     prompt: 'consent'
   })
@@ -80,6 +83,8 @@ app.get('/google/oauth', async (req, res) => {
   const pageToken = r.data.startPageToken
   r = await drive.changes.watch({
     pageToken,
+    pageSize: 3,
+    restrictToMyDrive: true,
     requestBody: {
       id: uuid(),
       type: 'web_hook',
@@ -87,10 +92,34 @@ app.get('/google/oauth', async (req, res) => {
     }
   })
   console.log(r.data)
+  data.subscription = r.data
+  data.pageToken = pageToken
+  await service.update({ data })
 
   res.send('<!doctype><html><body><script>close()</script></body></html>')
 })
 app.post('/google/webhook', async (req, res) => {
+  console.log(req.headers)
+  const resourceId = req.header('x-goog-resource-id')
+  const service = await Service.findOne({ where: { data: { subscription: { resourceId } } } })
+  const googleClient = createGoogleClient()
+  googleClient.setCredentials(service.data.tokens)
+  const drive = google.drive({ version: 'v3', auth: googleClient })
+  const r = await drive.changes.list({ pageToken: service.data.pageToken })
+  console.log(JSON.stringify(r.data, null, 2))
+  if (r.data.newStartPageToken) {
+    await service.update({ data: { ...service.data, pageToken: r.data.newStartPageToken } })
+  }
+
+  const bot = await Bot.findByPk(service.botId)
+
+  for (const change of r.data.changes) {
+    if (change.type === 'file') {
+      const r = await drive.files.get({ fileId: change.fileId })
+      console.log(r.data)
+      await bot.sendMessage(service.groupId, { text: `Some one changed file "[${r.data.name}](https://drive.google.com/file/d/${r.data.id}/view)"` })
+    }
+  }
   res.send('')
 })
 app.get('/', async (req, res) => {
