@@ -20,6 +20,16 @@ skill.handle = async event => {
       break
   }
 }
+const sendAuthLink = async (group, bot) => {
+  const googleClient = createGoogleClient()
+  const googleUrl = googleClient.generateAuthUrl({
+    access_type: 'offline',
+    scope: ['https://www.googleapis.com/auth/drive'],
+    state: `${group.id}:${bot.id}`,
+    prompt: 'consent'
+  })
+  await bot.sendMessage(group.id, { text: `Please [authorize me](${googleUrl}) to access your Google Drive` })
+}
 const handleMessage4Bot = async event => {
   const { text, group, bot } = event
   if (text === 'list') {
@@ -29,17 +39,20 @@ const handleMessage4Bot = async event => {
       const googleClient = createGoogleClient()
       googleClient.setCredentials(service.data.tokens)
       const drive = google.drive({ version: 'v3', auth: googleClient })
-      const r = await drive.files.list()
-      const text = r.data.files.map(file => file.name).slice(0, 6).join('\n')
-      await bot.sendMessage(group.id, { text })
+      let r
+      try {
+        r = await drive.files.list()
+        const text = r.data.files.map(file => file.name).slice(0, 6).join('\n')
+        await bot.sendMessage(group.id, { text })
+      } catch (e) {
+        if (e.response && e.response.status === 400) { // google token invalid
+          console.log('google token invalid')
+          service.destroy()
+          await sendAuthLink(group, bot)
+        }
+      }
     } else {
-      const googleClient = createGoogleClient()
-      const googleUrl = googleClient.generateAuthUrl({
-        access_type: 'offline',
-        scope: ['https://www.googleapis.com/auth/drive'],
-        state: `${group.id}:${bot.id}`
-      })
-      await bot.sendMessage(group.id, { text: `Please [authorize me](${googleUrl}) to access your Google Drive` })
+      await sendAuthLink(group, bot)
     }
   }
 }
