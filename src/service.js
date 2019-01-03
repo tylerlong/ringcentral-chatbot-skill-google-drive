@@ -4,7 +4,7 @@ import uuid from 'uuid/v1'
 import Google from './google'
 
 Service.prototype.createWebHook = async function () {
-  const drive = Google.drive(this.tokens)
+  const drive = Google.drive(this.data.tokens)
   let r = await drive.changes.getStartPageToken()
   const pageToken = r.data.startPageToken
   r = await drive.changes.watch({
@@ -28,7 +28,7 @@ Service.prototype.createWebHook = async function () {
 
 Service.prototype.removeWebHook = async function () {
   if (this.data.subscription) {
-    const channel = Google.channel(this.tokens)
+    const channel = Google.channel(this.data.tokens)
     const r = await channel.stop({
       id: this.data.subscription.id,
       resourceId: this.data.subscription.resourceId
