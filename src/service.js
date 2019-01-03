@@ -1,4 +1,4 @@
-import Service from 'ringcentral-chatbot/dist/models/Service'
+import { Service } from 'ringcentral-chatbot/dist/models'
 import uuid from 'uuid/v1'
 
 import Google from './google'
@@ -39,3 +39,5 @@ Service.prototype.removeWebHook = async function () {
     await this.update({ data: this.data })
   }
 }
+
+export default Service

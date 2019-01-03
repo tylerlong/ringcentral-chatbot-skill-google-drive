@@ -1,6 +1,5 @@
-import Service from 'ringcentral-chatbot/dist/models/Service'
-
 import Google from './google'
+import Service from './service'
 
 const handle = async event => {
   switch (event.type) {
@@ -18,9 +17,9 @@ const handleMessage4Bot = async event => {
   switch (text.toLowerCase()) {
     case 'help':
       await reply(`
-* help: display this help message
-* bind: bind a Google drive account
-* unbind: unbind the bound Google drive account
+**help**: display this help message
+**bind**: bind a Google drive account
+**unbind**: unbind the bound Google drive account
       `)
       break
     case 'bind':
@@ -28,7 +27,7 @@ const handleMessage4Bot = async event => {
       await reply(`Please [authorize me](${googleAuthUrl}) to access your Google Drive`)
       break
     case 'unbind':
-      const service = Service.findOne({ where: { name: 'GoogleDrive', botId: bot.id, groupId: group.id } })
+      const service = await Service.findOne({ where: { name: 'GoogleDrive', botId: bot.id, groupId: group.id } })
       if (service !== null) {
         await service.removeWebHook()
         await service.destroy()
