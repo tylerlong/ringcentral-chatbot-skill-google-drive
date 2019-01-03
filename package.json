@@ -4,7 +4,7 @@
   "license": "MIT",
   "main": "index-compiled.js",
   "scripts": {
-    "compile": "babel index.js -o index-compiled.js -s",
+    "compile": "babel src -o index-compiled.js -s",
     "prepublishOnly": "yarn compile"
   },
   "dependencies": {
