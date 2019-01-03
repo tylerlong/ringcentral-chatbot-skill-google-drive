@@ -84,14 +84,16 @@ app.get('/google/oauth', async (req, res) => {
   r = await drive.changes.watch({
     pageToken,
     pageSize: 3,
-    restrictToMyDrive: true,
+    includeCorpusRemovals: true,
+    includeTeamDriveItems: true,
+    supportsTeamDrives: true,
     requestBody: {
       id: uuid(),
       type: 'web_hook',
       address: process.env.RINGCENTRAL_CHATBOT_SERVER + '/google/webhook'
     }
   })
-  console.log(r.data)
+  console.log('await drive.changes.watch:', r.data)
   data.subscription = r.data
   data.pageToken = pageToken
   service = await service.update({ data })
@@ -99,13 +101,14 @@ app.get('/google/oauth', async (req, res) => {
   res.send('<!doctype><html><body><script>close()</script></body></html>')
 })
 app.post('/google/webhook', async (req, res) => {
+  console.log('/google/webhook req.headers:', req.headers)
   const resourceId = req.header('x-goog-resource-id')
   const service = await Service.findOne({ where: { data: { subscription: { resourceId } } } })
   const googleClient = createGoogleClient()
   googleClient.setCredentials(service.data.tokens)
   const drive = google.drive({ version: 'v3', auth: googleClient })
   const r = await drive.changes.list({ pageToken: service.data.pageToken })
-  console.log(JSON.stringify(r.data, null, 2))
+  console.log('await drive.changes.list:', JSON.stringify(r.data, null, 2))
   if (r.data.newStartPageToken) {
     await service.update({ data: { ...service.data, pageToken: r.data.newStartPageToken } })
   }
@@ -114,21 +117,20 @@ app.post('/google/webhook', async (req, res) => {
 
   for (const change of r.data.changes) {
     if (change.type === 'file') {
-      const r = await drive.files.get({ fileId: change.fileId, fields: 'id,name,createdTime,modifiedTime,trashedTime,webViewLink,lastModifyingUser/emailAddress,lastModifyingUser/displayName,trashingUser/emailAddress' })
-      console.log(r.data)
+      const r = await drive.files.get({ fileId: change.fileId, fields: 'id,name,trashed,createdTime,modifiedTime,trashedTime,webViewLink,lastModifyingUser/emailAddress,lastModifyingUser/displayName,trashingUser/emailAddress,trashingUser/displayName' })
+      console.log('drive.files.get:', r.data)
       if (!r.data.lastModifyingUser) {
         continue
       }
-      let action = 'changed'
-      if (r.data.createdTime === r.data.modifiedTime) {
-        if (moment() - moment(r.data.modifiedTime) < 60000) {
-          action = 'added'
-        } else {
-          action = 'removed'
-        }
+      let action = 'modified'
+      if (r.data.trashed) {
+        action = 'deleted'
+      }
+      if (r.data.createdTime === r.data.modifiedTime && moment() - moment(r.data.modifiedTime) < 60000) {
+        action = 'added'
       }
       const user = r.data.lastModifyingUser.displayName || r.data.lastModifyingUser.emailAddress
-      await bot.sendMessage(service.groupId, { text: `File "[${r.data.name}](https://drive.google.com/file/d/${r.data.id}/view)" ${action} by ${user}` })
+      await bot.sendMessage(service.groupId, { text: `File "[${r.data.name}](${r.data.webViewLink})" ${action} by ${user}` })
     }
   }
   res.send('')

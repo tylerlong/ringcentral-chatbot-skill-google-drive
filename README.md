@@ -49,3 +49,9 @@ const app = createApp(handle, [
 ])
 app.listen(3000)
 ```
+
+
+## Todo
+
+- make sure there is one and only one google webhook subscription per service.
+- only monitor file adding/deteling. No change monitoring.
