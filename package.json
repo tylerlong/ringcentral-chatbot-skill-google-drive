@@ -1,6 +1,6 @@
 {
   "name": "ringcentral-chatbot-skill-google-drive",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "license": "MIT",
   "main": "index-compiled.js",
   "scripts": {
@@ -15,7 +15,7 @@
     "@babel/cli": "^7.2.3",
     "@babel/core": "^7.2.2",
     "@babel/preset-env": "^7.2.3",
-    "husky": "^1.2.1",
+    "husky": "^1.3.1",
     "ringcentral-chatbot": "^0.4.6",
     "sqlite3": "^4.0.4",
     "standard": "^12.0.1",

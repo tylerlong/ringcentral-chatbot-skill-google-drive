@@ -18,6 +18,9 @@ In order for this skill to work, you need to provide the following information a
 
 - GOOGLE_API_CLIENT_ID
 - GOOGLE_API_CLIENT_SECRET
+- GOOGLE_SITE_VERIFICATION
+
+`GOOGLE_SITE_VERIFICATION` is for google to verify that you own the domain name, it is optional.
 
 
 ## Basic Sample
@@ -49,9 +52,3 @@ const app = createApp(handle, [
 ])
 app.listen(3000)
 ```
-
-
-## Todo
-
-- make sure there is one and only one google webhook subscription per service.
-- only monitor file adding/deteling. No change monitoring.
