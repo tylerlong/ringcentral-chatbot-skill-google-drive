@@ -27,7 +27,7 @@ app.get('/google/oauth', async (req, res) => {
 })
 
 app.post('/google/webhook', async (req, res) => {
-  console.log('/google/webhook req.headers:', req.headers)
+  console.log('/google/webhook req.headers:', new Date(), req.headers)
   const resourceId = req.header('x-goog-resource-id')
   const service = await Service.findOne({ where: { name: 'GoogleDrive', data: { subscription: { resourceId } } } })
   const drive = Google.drive(service.data.tokens)
@@ -45,7 +45,7 @@ app.post('/google/webhook', async (req, res) => {
     if (r.data.lastModifyingUser) {
       let action
       if (r.data.trashed) {
-        action = 'deleted'
+        action = 'trashed'
       } else if (r.data.createdTime === r.data.modifiedTime) {
         action = 'added'
       }
