@@ -1,7 +1,8 @@
 import express from 'express'
-import { Service, Bot } from 'ringcentral-chatbot/dist/models'
+import { Bot } from 'ringcentral-chatbot/dist/models'
 
 import Google from './google'
+import Service from './service'
 
 const app = express()
 
@@ -61,6 +62,15 @@ app.post('/google/webhook', async (req, res) => {
 // for Google to verify domain ownership
 app.get('/', (req, res) => {
   res.send(`<!doctype><html><head><meta name="google-site-verification" content="${process.env.GOOGLE_SITE_VERIFICATION}" /></head></html>`)
+})
+
+app.put('/google/refresh-subscriptions', async (req, res) => {
+  const services = await Service.findAll({ where: { name: 'GoogleDrive' } })
+  for (const service of services) {
+    await service.removeWebHook()
+    await service.createWebHook()
+  }
+  res.send('')
 })
 
 export default app

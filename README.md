@@ -54,6 +54,57 @@ app.listen(3000)
 ```
 
 
+## Cron job to refresh Google subscriptions
+
+We use subscriptions to minitor changes to Google Drive.
+Subscriptions expire. We need to setup cron jobs to refresh them to keep them alive.
+
+The way to refresh subscriptions is simple and direct:
+
+```
+HTTP PUT https://<chatbot-server>/google/refresh-subscriptions
+```
+
+It is recommended to do refreshing every hour.
+
+You can create linux cron tab:
+
+```
+0 * * * * curl -X PUT https://<chatbot-server>/google/refresh-subscriptions
+```
+
+Or you can write some JS code if you run your bot as a express.js server:
+
+```js
+import axios from 'axios'
+
+setInterval(() => axios.put(`${process.env.RINGCENTRAL_CHATBOT_SERVER}/google/refresh-subscriptions`), 3600000)
+```
+
+Or if your bot is deployed to AWS Lambda:
+
+
+In your `dist/lambda.js` file:
+
+```js
+import axios from 'axios'
+
+module.exports.crontab = async () => {
+  await axios.put(`${process.env.RINGCENTRAL_CHATBOT_SERVER}/google/refresh-subscription`)
+}
+```
+
+In your `serverless.yml` file:
+
+```yml
+functions:
+  crontab:
+    handler: dist/lambda.crontab
+    events:
+      - schedule: rate(1 hour)
+```
+
+
 ## Todo
 
 - What if user revoked access to Google drive?
