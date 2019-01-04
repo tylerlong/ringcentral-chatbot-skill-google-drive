@@ -13,13 +13,6 @@ const drive = tokens => {
   return drive
 }
 
-const channel = tokens => {
-  const client = create()
-  client.setCredentials(tokens)
-  const channel = google.channel({ version: 'v3', auth: client })
-  return channel
-}
-
 const authUrl = state => {
   const client = create()
   const authUrl = client.generateAuthUrl({
@@ -33,4 +26,4 @@ const authUrl = state => {
   return authUrl
 }
 
-export default { create, drive, channel, authUrl }
+export default { create, drive, authUrl }

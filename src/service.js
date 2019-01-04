@@ -28,12 +28,13 @@ Service.prototype.createWebHook = async function () {
 
 Service.prototype.removeWebHook = async function () {
   if (this.data.subscription) {
-    const channel = Google.channel(this.data.tokens)
-    const r = await channel.stop({
-      id: this.data.subscription.id,
-      resourceId: this.data.subscription.resourceId
+    const channels = Google.drive(this.data.tokens).channels
+    await channels.stop({
+      requestBody: {
+        id: this.data.subscription.id,
+        resourceId: this.data.subscription.resourceId
+      }
     })
-    console.log('await channel.stop:', r.data)
     delete this.data.subscription
     delete this.data.pageToken
     await this.update({ data: this.data })
