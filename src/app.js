@@ -72,7 +72,7 @@ app.put('/google/refresh-subscriptions', async (req, res) => {
       await service.createWebHook()
     } catch (e) {
       // User revoked access to his/her Google Drive
-      if (e.response && e.response.status === 400) { // todo: test this
+      if (e.response && (e.response.status === 400 || e.response.status === 401)) {
         await service.destroy()
       }
     }
