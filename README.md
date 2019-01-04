@@ -67,13 +67,13 @@ HTTP PUT https://<chatbot-server>/google/refresh-subscriptions
 
 It is recommended to do refreshing every hour.
 
-You can create linux cron tab:
+##### You can create linux cron tab:
 
 ```
 0 * * * * curl -X PUT https://<chatbot-server>/google/refresh-subscriptions
 ```
 
-Or you can write some JS code if you run your bot as a express.js server:
+##### Or you can write some JS code if you run your bot as a express.js server:
 
 ```js
 import axios from 'axios'
@@ -81,7 +81,7 @@ import axios from 'axios'
 setInterval(() => axios.put(`${process.env.RINGCENTRAL_CHATBOT_SERVER}/google/refresh-subscriptions`), 3600000)
 ```
 
-Or if your bot is deployed to AWS Lambda:
+##### Or if your bot is deployed to AWS Lambda:
 
 
 In your `dist/lambda.js` file:
@@ -103,8 +103,3 @@ functions:
     events:
       - schedule: rate(1 hour)
 ```
-
-
-## Todo
-
-- What if user revoked access to Google drive?

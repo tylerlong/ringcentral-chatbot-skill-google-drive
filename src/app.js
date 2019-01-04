@@ -67,8 +67,15 @@ app.get('/', (req, res) => {
 app.put('/google/refresh-subscriptions', async (req, res) => {
   const services = await Service.findAll({ where: { name: 'GoogleDrive' } })
   for (const service of services) {
-    await service.removeWebHook()
-    await service.createWebHook()
+    try {
+      await service.removeWebHook()
+      await service.createWebHook()
+    } catch (e) {
+      // User revoked access to his/her Google Drive
+      if (e.response && e.response.status === 400) { // todo: test this
+        await service.destroy()
+      }
+    }
   }
   res.send('')
 })
