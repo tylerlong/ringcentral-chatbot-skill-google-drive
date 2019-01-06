@@ -5,6 +5,9 @@ This skill enables the chatbot to receive notifications when there are things ch
 It should be used together with [RingCentral Chatbot framework for JavaScript](https://github.com/ringcentral/ringcentral-chatbot-js).
 
 
+### [Demo project](https://github.com/tylerlong/glip-google-drive-chatbot)
+
+
 ## Install
 
 ```
