@@ -4,7 +4,7 @@ import Service from './service'
 const handle = async event => {
   switch (event.type) {
     case 'Message4Bot':
-      handleMessage4Bot(event)
+      await handleMessage4Bot(event)
       break
     default:
       break
