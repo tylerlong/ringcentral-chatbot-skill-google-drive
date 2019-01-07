@@ -63,6 +63,9 @@ app.post('/google/webhook', async (req, res) => {
 app.get('/', (req, res) => {
   res.send(`<!doctype><html><head><meta name="google-site-verification" content="${process.env.GOOGLE_SITE_VERIFICATION}" /></head></html>`)
 })
+app.get('/google/webhook/googlece5a6e1d27e7fa99.html', (req, res) => {
+  res.send('google-site-verification: googlece5a6e1d27e7fa99.html')
+})
 
 app.put('/google/refresh-subscriptions', async (req, res) => {
   const services = await Service.findAll({ where: { name: 'GoogleDrive' } })
